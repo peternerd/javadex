@@ -14,17 +14,18 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.ListSelectionModel;
 import java.net.URL;
 import javax.imageio.ImageIO;
+import java.util.Random;
 
 public class PokedexFrame extends JFrame{
-
+	//Sprite es una clase de la libreria pokejava que nos permite obtener el sprite de un pokemon
 	private Sprite sprite;
+	//Pokemon es la clase que permite crear los objetos Pokemon y asi acceder a los datos del mismo
+	private Pokemon pokemon;
 	private JList<String> listPokemons;
-	private JLabel lblName,lblAtk,lblDef,lblSpAtk,lblSpDef,lblHP,lblSpeed,lblSprite;
-	private JTextArea txtDescription;
+	private JLabel lblName,lblAtk,lblDef,lblSpAtk,lblSpDef,lblHP,lblSpeed,lblSprite,lblDescription;
 	private JPanel mainPanel,pokeInfo;
 	private DefaultListModel<String> listModelPokemons;
 	private JScrollPane listScrollPane = new JScrollPane();
-	private Pokemon pokemon;
 	
 	public PokedexFrame(){
 		super("Pokedex");
@@ -35,10 +36,14 @@ public class PokedexFrame extends JFrame{
 		listPokemons.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		listPokemons.setVisibleRowCount(20);
 		listScrollPane.setViewportView(listPokemons);
+		//Agrega la informacion sobre el pokemon al panel de informacion
 		panelInfoPokemon(pokemon);
+		//agrega el listener sobre la lista
 		addListenerToList();
 		mainPanel.add(listScrollPane);
 		mainPanel.add(pokeInfo);
+		mainPanel.add(lblDescription);
+		//Agrega todos los nombres de los pokemon a el JList
 		setModelPokemons();
 		setContentPane(mainPanel);
         setSize(800,600);
@@ -46,10 +51,16 @@ public class PokedexFrame extends JFrame{
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
 
-	public void setModelPokemons(){
+	/**
+	*Obtiene la lista de nombres de los Pokemons y los agrega
+	*a la lista
+	*/
+	private void setModelPokemons(){
 		try{
+			//Crea una instancia de la clase Pokedex
 			Pokedex pokedex = new Pokedex();
 			listModelPokemons = new DefaultListModel();
+			//Obtenemos la lista de nombres usando el metodo getPokemonsNames()
 			for(String p: pokedex.getPokemonsNames()){
 				listModelPokemons.addElement(p);
 			}
@@ -63,7 +74,12 @@ public class PokedexFrame extends JFrame{
 		new PokedexFrame();
 	}
 
-	public void panelInfoPokemon(Pokemon pokemon){
+	/**
+	*Agrega la informacion sobre un Pokemon al panel de informacion
+	*@param pokemon el pokemon del cual se desea mostrar sus datos
+	*/
+	private void panelInfoPokemon(Pokemon pokemon){
+		//si no se tiene una instancia de Pokemon se dejan los campos vacios
 		if(pokemon==null){
 			
 			lblSprite = new JLabel("");
@@ -75,7 +91,8 @@ public class PokedexFrame extends JFrame{
 			lblSpeed = new JLabel("");
 			lblSpAtk = new JLabel("");
 			lblSpDef = new JLabel("");
-			txtDescription = new JTextArea("",10,50);
+			lblDescription = new JLabel("");
+			
 
 			pokeInfo.add(new JLabel("Name: "));
 			pokeInfo.add(lblName);
@@ -91,17 +108,18 @@ public class PokedexFrame extends JFrame{
 			pokeInfo.add(lblSpAtk);
 			pokeInfo.add(new JLabel("Sp.Def: "));
 			pokeInfo.add(lblSpDef);
-			pokeInfo.add(txtDescription);
 		}
 		else{
+			//Intenta traer el sprite del Pokemon
 			try{
+				//Lee la imagen desde la URL
 				lblSprite.setIcon(new ImageIcon(ImageIO.read(new URL("http://www.pokeapi.co"+sprite.getImage()))));
 
 			}
 			catch(Exception e){
 				System.out.println("Error en el request");
 			}
-			System.out.println(sprite.getImage());
+			//Agrega la informacion del pokemon a cada campo
 			lblName.setText(pokemon.getName());
 			lblHP.setText(pokemon.getHP()+"");
 			lblAtk.setText(pokemon.getAttack()+"");
@@ -109,21 +127,35 @@ public class PokedexFrame extends JFrame{
 			lblSpeed.setText(pokemon.getSpeed()+"");
 			lblSpAtk.setText(pokemon.getSpAttack()+"");
 			lblSpDef.setText(pokemon.getSpDefense()+"");
+			lblDescription.setText(getDescription(pokemon));
 		}
 	}
 
-	public void addListenerToList(){
+	/**
+	*Agrega el listener a la lista
+	*/
+	private void addListenerToList(){
 		ListSelectionListener listListener = new ListSelectionListener(){
 			public void valueChanged(ListSelectionEvent e){
 				if(!e.getValueIsAdjusting()){
+					//crea un pokemon pasandole como parametro el nombre del pokemon seleccionado en la lista
 					pokemon = new Pokemon(listPokemons.getSelectedValue().toString());
-					sprite = new Sprite(listPokemons.getSelectedIndex()+2);
-					System.out.println(listPokemons.getSelectedIndex()+1);
+					//se obtiene el ID del pokemon y se crea el objeto Sprite correspondiente
+					sprite = new Sprite(pokemon.getID()+1);
+					//crea el panel de informacion con los datos del pokemon
 					panelInfoPokemon(pokemon);
-					System.out.println(listPokemons.getSelectedValue().toString());
 				}
 			}
 		};
 		listPokemons.addListSelectionListener(listListener);
+	}
+
+	private String getDescription(Pokemon pokemon){
+		if(!pokemon.hasDescription()){
+			return "";
+		}
+		ArrayList<Integer> descriptionsId = pokemon.getDescriptionsID();
+		int randomDescription = new Random().nextInt(descriptionsId.size());
+		return new Description(descriptionsId.get(randomDescription)).getDescription();
 	}
 }
